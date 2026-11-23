@@ -35,6 +35,7 @@ a{color:var(--acc);word-break:break-all}.dh{font:600 18px Georgia,serif;text-tra
 .its{flex:1;display:flex;flex-wrap:wrap;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;min-height:56px;align-items:center}
 .it{display:flex;align-items:center;gap:6px;border-left:4px solid;background:var(--bg);border-radius:8px;padding:4px 8px;font-size:14px;cursor:pointer;max-width:100%}
 .it img{width:34px;height:34px;object-fit:cover;border-radius:6px}.em{font-size:22px}
+.it[data-drag]{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}.it.wait{opacity:.6}.its.hot{outline:3px dashed var(--acc)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0}.chip{white-space:nowrap;border-radius:20px}.chip.on{background:var(--acc);color:#fff}
 #msgs{display:flex;flex-direction:column;gap:6px}
 .b{align-self:flex-start;max-width:85%;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:6px 10px;white-space:pre-wrap;word-break:break-word}
@@ -102,10 +103,9 @@ function render(){if(!cfg)return;
 function card(D,X){const me=cfg.me,isMe=X===me,p=data.days[D]?.[X]?.p,c=col(X);
   let h=`<div class="card" style="border-top:5px solid ${c}"><div class="who" style="color:${c}">${esc(nm(X))}${isMe?' (moi)':''}</div>`;
   if(!p)h+=isMe&&D===today()?`<button class="go" data-a="prop" data-d="${D}">+ Ma proposition du jour</button>`:`<p class="mut">${isMe?'Pas de proposition ce jour-là.':'Rien proposé pour l’instant…'}</p>`;
-  else{const s=p.img?imgSrc(D,X):'',r=data.rank[isMe?other():me]?.[D];
+  else{const s=p.img?imgSrc(D,X):'',r=place()[`${D}-${X}`]?.v;
     h+=`<div class="ttl">${esc(p.title)}</div>`+(s?`<img src="${s}">`:p.img?'<div class="mut">Chargement de l’image…</div>':'')+(p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">🔗 ${esc(p.link.replace(/^https?:\/\/(www\.)?/,'').slice(0,40))}</a>`:'');
-    if(isMe)h+=`<div class="mut">${r?`Classé <b class="t t${r}" style="min-width:26px;height:26px">${r}</b> par ${esc(nm(other()))}`:'Pas encore classé'}</div>`+(D===today()?`<button class="lnk" data-a="prop" data-d="${D}">✏️ Modifier</button>`:'');
-    else h+=`<div class="tiers">${TIERS.map(v=>`<button class="t t${v}${r===v?' on':''}" data-a="rank" data-d="${D}" data-v="${v}">${v}</button>`).join('')}</div>`}
+    h+=`<div class="tiers">${TIERS.map(v=>`<button class="t t${v}${r===v?' on':''}" data-a="rank" data-k="${D}-${X}" data-v="${v}">${v}</button>`).join('')}</div>`+(isMe&&D===today()?`<button class="lnk" data-a="prop" data-d="${D}">✏️ Modifier</button>`:'')}
   return h+'</div>'}
 function dayView(D){const A=$('#app');
   if(view.built!==D){view.built=D;A.innerHTML=`<div id="dh" class="dh"></div><div id="recap"></div><h3>💬 Discussion</h3><div id="msgs"></div><div class="comp"><textarea id="mi" rows="2" placeholder="Écrire un message…"></textarea><button class="go" data-a="send" data-d="${D}">➤</button></div>`}
@@ -114,22 +114,32 @@ function dayView(D){const A=$('#app');
   const ms=['A','B'].flatMap(X=>(data.days[D]?.[X]?.m||[]).map(m=>({...m,X}))).sort((a,b)=>a.t-b.t),box=$('#msgs'),n=box.dataset.n;
   box.innerHTML=ms.length?ms.map(m=>`<div class="b${m.X===cfg.me?' me':''}" style="--c:${col(m.X)}"><small>${esc(nm(m.X))} · ${new Date(m.t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</small>${linkify(esc(m.x))}</div>`).join(''):'<p class="mut">Aucun message pour l’instant.</p>';
   if(n!==undefined&&+n!==ms.length)scrollTo(0,document.body.scrollHeight);box.dataset.n=ms.length}
-function tierView(){view.built=null;const items=[];
-  for(const D in data.days)for(const X of['A','B']){const p=data.days[D][X]?.p;if(p)items.push({D,X,p,r:data.rank[X==='A'?'B':'A']?.[D]})}
+function tierView(){view.built=null;const items=[],PL=place();
+  for(const D in data.days)for(const X of['A','B']){const p=data.days[D][X]?.p;if(p)items.push({D,X,p,r:(v=>v==='x'?undefined:v)(PL[`${D}-${X}`]?.v)})}
   items.sort((a,b)=>b.D.localeCompare(a.D));
-  const it=i=>{const s=i.p.img?imgSrc(i.D,i.X):'';return`<div class="it" data-a="open" data-d="${i.D}" style="border-color:${col(i.X)}" title="${esc(nm(i.X))}">${s?`<img src="${s}">`:''}<span>${esc(i.p.title)}</span></div>`};
-  const todo=items.filter(i=>i.X!==cfg.me&&!i.r);
-  $('#app').innerHTML=
-   (todo.length?`<div class="row"><b class="t tx">À classer</b><div class="its">${todo.map(it).join('')}</div></div>`:'')+
-   TIERS.map(T=>`<div class="row"><b class="t t${T}">${T}</b><div class="its">${items.filter(i=>i.r===T).map(it).join('')||'<i class="mut">—</i>'}</div></div>`).join('')}
+  const it=i=>{const s=i.p.img?imgSrc(i.D,i.X):'';return`<div class="it" data-drag="${i.D}-${i.X}" data-a="open" data-d="${i.D}" style="border-color:${col(i.X)}" title="${esc(nm(i.X))}">${s?`<img src="${s}">`:''}<span>${esc(i.p.title)}</span></div>`};
+  const todo=items.filter(i=>!i.r);
+  $('#app').innerHTML=TIERS.map(T=>`<div class="row"><b class="t t${T}">${T}</b><div class="its" data-tier="${T}">${items.filter(i=>i.r===T).map(it).join('')||'<i class="mut">—</i>'}</div></div>`).join('')+
+   `<div class="row"><b class="t tx">À classer</b><div class="its" data-tier="x">${todo.map(it).join('')||'<i class="mut">Rien à classer 🎉</i>'}</div></div>`+
+   `<p class="mut">Glisse n’importe quelle carte vers un niveau, la tienne comme celle de l’autre : tout déplacement se voit chez vous deux. Tu peux aussi la remettre dans « À classer ».</p>`}
 function daysView(){view.built=null;const ds=new Set(Object.keys(data.days));ds.add(today());
   $('#app').innerHTML=[...ds].sort().reverse().map(D=>{const d=data.days[D]||{},n=(d.A?.m?.length||0)+(d.B?.m?.length||0);
     return`<div class="card day" data-a="open" data-d="${D}"><b>${new Date(D+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</b>`+
     ['A','B'].map(X=>`<div style="color:${col(X)}">${esc(nm(X))} : ${d[X]?.p?esc(d[X].p.title):'—'}</div>`).join('')+`<small class="mut">💬 ${n}</small></div>`}).join('')}
 
-$('#app').onclick=e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,D=t.dataset.d;
+function place(){const m={};for(const X of['A','B'])for(const k in data.rank[X]){let v=data.rank[X][k],key=k;if(typeof v==='string'){key=k+'-'+(X==='A'?'B':'A');v={v,t:0}}if(!m[key]||v.t>=m[key].t)m[key]=v}return m}
+function setRank(K,v){const p=`rank/${cfg.me}.json`;save(p,{...(cache[p]?.v||{}),[K]:{v,t:Date.now()}})}
+let drag=null,noClick=0;
+const hot=e=>document.elementFromPoint(e.clientX,e.clientY)?.closest('.its[data-tier]'),clr=()=>document.querySelectorAll('.its.hot').forEach(r=>r.classList.remove('hot'));
+$('#app').addEventListener('pointerdown',e=>{const it=e.target.closest('.it[data-drag]');if(it)drag={D:it.dataset.drag,el:it,x:e.clientX,y:e.clientY,on:false}});
+addEventListener('pointermove',e=>{if(!drag)return;
+  if(!drag.on){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;drag.on=true;const g=drag.el.cloneNode(true);g.style.cssText='position:fixed;pointer-events:none;z-index:30;opacity:.9;transform:translate(-50%,-50%)';document.body.appendChild(g);drag.g=g;drag.el.style.opacity=.3}
+  drag.g.style.left=e.clientX+'px';drag.g.style.top=e.clientY+'px';clr();hot(e)?.classList.add('hot')});
+const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(!d.on)return;d.g.remove();d.el.style.opacity='';clr();noClick=Date.now();const t=e.type==='pointerup'&&hot(e);if(t)setRank(d.D,t.dataset.tier)};
+addEventListener('pointerup',endDrag);addEventListener('pointercancel',endDrag);
+$('#app').onclick=e=>{if(Date.now()-noClick<400)return;const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,D=t.dataset.d;
   if(a==='open'){view={...view,tab:'day',day:D,built:null};render();scrollTo(0,0)}
-  if(a==='rank'){const p=`rank/${cfg.me}.json`,r={...(cache[p]?.v||{})};if(r[D]===t.dataset.v)delete r[D];else r[D]=t.dataset.v;save(p,r)}
+  if(a==='rank'){const k=t.dataset.k;setRank(k,place()[k]?.v===t.dataset.v?'x':t.dataset.v)}
   if(a==='prop')propDlg(D);
   if(a==='f'){view.filter=t.dataset.v;render()}
   if(a==='send'){const i=$('#mi'),x=i.value.trim();if(!x)return;i.value='';const p=`days/${D}/m-${cfg.me}.json`;save(p,[...(cache[p]?.v||[]),{t:Date.now(),x}])}};

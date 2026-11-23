@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tier à deux</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c8553d">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tier à deux">
+<style>
+:root{--bg:#fbf3e8;--card:#fffaf2;--ink:#3b2a22;--mut:#8a7468;--line:#ecdcc8;--acc:#c8553d}
+@media(prefers-color-scheme:dark){:root{--bg:#241915;--card:#31241f;--ink:#f5e8da;--mut:#b49f90;--line:#46342c}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 0}
+header{display:flex;align-items:center;gap:8px;padding:12px 16px;position:sticky;top:env(safe-area-inset-top);background:var(--bg);z-index:5}
+h1{font:700 22px Georgia,serif;margin:0;flex:1;color:var(--acc)}h3{margin:16px 0 8px}
+.dot{width:10px;height:10px;border-radius:50%;background:#aaa}.dot.ok{background:#5f8f6b}.dot.err{background:#d33}
+#app{padding:0 14px 150px;max-width:640px;margin:auto}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:8px 12px}
+.go{background:var(--acc);color:#fff;border:0;font-weight:600}.lnk{border:0;background:none;color:var(--acc);padding:4px 0}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav button{flex:1;border:0;border-radius:0;background:none;display:flex;flex-direction:column;align-items:center;font-size:20px;color:var(--mut)}
+nav button small{font-size:11px}nav button.on{color:var(--acc);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:10px 0}
+.card img{max-width:100%;max-height:260px;border-radius:12px;display:block;margin:8px 0}
+.who{font-weight:700;font-size:14px}.ttl{font-size:19px;font-weight:600;margin:4px 0}.mut{color:var(--mut);font-size:14px}
+a{color:var(--acc);word-break:break-all}.dh{font:600 18px Georgia,serif;text-transform:capitalize;margin:6px 0}
+.day{cursor:pointer}
+.t{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;border-radius:10px;color:#fff;font-weight:800;border:0}
+.tS{background:#e76f51}.tA{background:#f4a261}.tB{background:#e0b43c}.tC{background:#8ab17d}.tD{background:#6d8aa8}.tx{background:var(--mut);padding:0 8px}
+.tiers{display:flex;gap:8px;margin-top:8px}.tiers .t{opacity:.4}.tiers .t.on{opacity:1;outline:3px solid var(--ink)}
+.row{display:flex;gap:8px;margin:8px 0;align-items:stretch}.row>.t{height:auto;min-height:56px;flex:none}
+.its{flex:1;display:flex;flex-wrap:wrap;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;min-height:56px;align-items:center}
+.it{display:flex;align-items:center;gap:6px;border-left:4px solid;background:var(--bg);border-radius:8px;padding:4px 8px;font-size:14px;cursor:pointer;max-width:100%}
+.it img{width:34px;height:34px;object-fit:cover;border-radius:6px}.em{font-size:22px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0}.chip{white-space:nowrap;border-radius:20px}.chip.on{background:var(--acc);color:#fff}
+#msgs{display:flex;flex-direction:column;gap:6px}
+.b{align-self:flex-start;max-width:85%;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:6px 10px;white-space:pre-wrap;word-break:break-word}
+.b.me{align-self:flex-end}.b small{display:block;color:var(--c);font-weight:700;font-size:12px}
+.comp{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));display:flex;gap:8px;padding:8px 14px;background:var(--bg);max-width:640px;margin:auto}
+.comp textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--card);resize:none}
+dialog{border:0;border-radius:18px;background:var(--card);color:var(--ink);width:min(92vw,420px)}
+dialog input:not([type=radio]),dialog select{display:block;width:100%;margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.sw{display:flex;gap:10px;margin:10px 0}.sw input{display:none}.sw span{display:block;width:32px;height:32px;border-radius:50%}.sw input:checked+span{outline:3px solid var(--ink)}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:20px;display:none;z-index:20}
+</style></head><body>
+<header><h1>Tier à deux</h1><span id="st" class="dot"></span><button id="gear">⚙️</button></header>
+<main id="app"></main>
+<nav><button data-t="today">☀️<small>Aujourd’hui</small></button><button data-t="tier">🏆<small>Tier list</small></button><button data-t="days">📖<small>Jours</small></button></nav>
+<dialog id="dlg"></dialog><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Paris'});
+const TIERS=['S','A','B','C','D'],TYPES={musique:'🎵',film:'🎬',plat:'🍽️',autre:'✨'},COLS=['#c8553d','#5f8f6b','#d9a031','#6b5b95','#3f7cac','#c2527f'];
+let cfg=JSON.parse(localStorage.td_cfg||'null'),tree={},cache={},imgs={},data={days:{},rank:{A:{},B:{}},users:{}},view={tab:'today',day:null,built:null,filter:'all'},lastTree='',busy=0,q=Promise.resolve(),syncing=false;
+const dlg=$('#dlg'),other=()=>cfg.me==='A'?'B':'A';
+const nm=X=>data.users[X]?.name||(X===cfg.me?cfg.name:'L’autre'),col=X=>data.users[X]?.color||(X===cfg.me&&cfg.color)||COLS[X==='A'?0:1];
+const b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,'')))),b64e=s=>btoa(unescape(encodeURIComponent(s)));
+const gh=(p,o={})=>fetch('https://api.github.com/repos/'+cfg.repo+p,{cache:'no-cache',...o,headers:{Authorization:'Bearer '+cfg.token,Accept:'application/vnd.github+json'}});
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3000)};
+const linkify=s=>s.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+
+async function put(path,content,msg,isB64){
+  for(let i=0;i<3;i++){
+    const body={message:msg||'maj',content:isB64?content:b64e(content)};if(tree[path])body.sha=tree[path];
+    const r=await gh('/contents/'+path,{method:'PUT',body:JSON.stringify(body)});
+    if(r.ok){tree[path]=(await r.json()).content.sha;return}
+    if(r.status===409||r.status===422){lastTree='';await sync(true);continue}
+    throw r.status}
+  throw 0}
+function save(path,obj){cache[path]={sha:'',v:obj};rebuild();render();busy++;
+  q=q.then(()=>put(path,JSON.stringify(obj))).then(()=>{cache[path].sha=tree[path]}).catch(()=>toast('Échec de l’envoi, réessaie'))
+   .finally(()=>busy--)}
+async function sync(force){
+  if(!cfg||syncing||(busy&&!force))return;syncing=true;
+  try{
+    const r=await gh('/git/trees/main?recursive=1');if(!r.ok)throw r.status;const j=await r.json();
+    if(j.sha===lastTree){setSt('ok');return}
+    const nt={};for(const t of j.tree)if(t.type==='blob')nt[t.path]=t.sha;tree=nt;
+    await Promise.all(Object.keys(tree).filter(p=>p.endsWith('.json')&&cache[p]?.sha!==tree[p]).map(async p=>{
+      const b=await(await gh('/git/blobs/'+tree[p])).json();cache[p]={sha:tree[p],v:JSON.parse(b64d(b.content))}}));
+    lastTree=j.sha;rebuild();render();setSt('ok')
+  }catch(e){setSt('err')}finally{syncing=false}}
+function setSt(s){$('#st').className='dot '+s}
+function rebuild(){const d={days:{},rank:{A:{},B:{}},users:{}};
+  for(const p in cache){const v=cache[p].v;let m;
+    if(m=p.match(/^days\/([\d-]+)\/([pm])-([AB])\.json$/))((d.days[m[1]]??={})[m[3]]??={})[m[2]]=v;
+    else if(m=p.match(/^rank\/([AB])\.json$/))d.rank[m[1]]=v;
+    else if(m=p.match(/^users\/([AB])\.json$/))d.users[m[1]]=v}
+  data=d}
+function imgSrc(D,X){const sha=tree[`img/${D}-${X}.jpg`];if(!sha)return'';if(imgs[sha])return imgs[sha];
+  if(!imgs['_'+sha]){imgs['_'+sha]=1;gh('/git/blobs/'+sha).then(r=>r.json()).then(b=>{imgs[sha]='data:image/jpeg;base64,'+b.content.replace(/\n/g,'');render()})}return''}
+function compress(f){return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');
+  c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.7).split(',')[1])};im.src=URL.createObjectURL(f)})}
+
+function render(){if(!cfg)return;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===view.tab||(view.tab==='day'&&b.dataset.t==='days')));
+  if(view.tab==='tier')return tierView();if(view.tab==='days')return daysView();dayView(view.tab==='today'?today():view.day)}
+function card(D,X){const me=cfg.me,isMe=X===me,p=data.days[D]?.[X]?.p,c=col(X);
+  let h=`<div class="card" style="border-top:5px solid ${c}"><div class="who" style="color:${c}">${esc(nm(X))}${isMe?' (moi)':''}</div>`;
+  if(!p)h+=isMe&&D===today()?`<button class="go" data-a="prop" data-d="${D}">+ Ma proposition du jour</button>`:`<p class="mut">${isMe?'Pas de proposition ce jour-là.':'Rien proposé pour l’instant…'}</p>`;
+  else{const s=p.img?imgSrc(D,X):'',r=data.rank[isMe?other():me]?.[D];
+    h+=`<div class="ttl">${TYPES[p.type]||'✨'} ${esc(p.title)}</div>`+(s?`<img src="${s}">`:p.img?'<div class="mut">Chargement de l’image…</div>':'')+(p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">🔗 ${esc(p.link.replace(/^https?:\/\/(www\.)?/,'').slice(0,40))}</a>`:'');
+    if(isMe)h+=`<div class="mut">${r?`Classé <b class="t t${r}" style="min-width:26px;height:26px">${r}</b> par ${esc(nm(other()))}`:'Pas encore classé'}</div>`+(D===today()?`<button class="lnk" data-a="prop" data-d="${D}">✏️ Modifier</button>`:'');
+    else h+=`<div class="tiers">${TIERS.map(v=>`<button class="t t${v}${r===v?' on':''}" data-a="rank" data-d="${D}" data-v="${v}">${v}</button>`).join('')}</div>`}
+  return h+'</div>'}
+function dayView(D){const A=$('#app');
+  if(view.built!==D){view.built=D;A.innerHTML=`<div id="dh" class="dh"></div><div id="recap"></div><h3>💬 Discussion</h3><div id="msgs"></div><div class="comp"><textarea id="mi" rows="2" placeholder="Écrire un message…"></textarea><button class="go" data-a="send" data-d="${D}">➤</button></div>`}
+  $('#dh').textContent=(D===today()?'Aujourd’hui · ':'')+new Date(D+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  $('#recap').innerHTML=card(D,cfg.me)+card(D,other());
+  const ms=['A','B'].flatMap(X=>(data.days[D]?.[X]?.m||[]).map(m=>({...m,X}))).sort((a,b)=>a.t-b.t),box=$('#msgs'),n=box.dataset.n;
+  box.innerHTML=ms.length?ms.map(m=>`<div class="b${m.X===cfg.me?' me':''}" style="--c:${col(m.X)}"><small>${esc(nm(m.X))} · ${new Date(m.t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</small>${linkify(esc(m.x))}</div>`).join(''):'<p class="mut">Aucun message pour l’instant.</p>';
+  if(n!==undefined&&+n!==ms.length)scrollTo(0,document.body.scrollHeight);box.dataset.n=ms.length}
+function tierView(){view.built=null;const f=view.filter,items=[];
+  for(const D in data.days)for(const X of['A','B']){const p=data.days[D][X]?.p;if(p)items.push({D,X,p,r:data.rank[X==='A'?'B':'A']?.[D]})}
+  items.sort((a,b)=>b.D.localeCompare(a.D));const ok=i=>f==='all'||i.p.type===f;
+  const chip=(v,l)=>`<button class="chip${f===v?' on':''}" data-a="f" data-v="${v}">${l}</button>`;
+  const it=i=>{const s=i.p.img?imgSrc(i.D,i.X):'';return`<div class="it" data-a="open" data-d="${i.D}" style="border-color:${col(i.X)}" title="${esc(nm(i.X))}">${s?`<img src="${s}">`:`<span class="em">${TYPES[i.p.type]||'✨'}</span>`}<span>${esc(i.p.title)}</span></div>`};
+  const todo=items.filter(i=>i.X!==cfg.me&&!i.r&&ok(i));
+  $('#app').innerHTML=`<div class="chips">${chip('all','Tout')}${Object.entries(TYPES).map(([k,v])=>chip(k,v+' '+k)).join('')}</div>`+
+   (todo.length?`<div class="row"><b class="t tx">À classer</b><div class="its">${todo.map(it).join('')}</div></div>`:'')+
+   TIERS.map(T=>`<div class="row"><b class="t t${T}">${T}</b><div class="its">${items.filter(i=>i.r===T&&ok(i)).map(it).join('')||'<i class="mut">—</i>'}</div></div>`).join('')}
+function daysView(){view.built=null;const ds=new Set(Object.keys(data.days));ds.add(today());
+  $('#app').innerHTML=[...ds].sort().reverse().map(D=>{const d=data.days[D]||{},n=(d.A?.m?.length||0)+(d.B?.m?.length||0);
+    return`<div class="card day" data-a="open" data-d="${D}"><b>${new Date(D+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</b>`+
+    ['A','B'].map(X=>`<div style="color:${col(X)}">${esc(nm(X))} : ${d[X]?.p?esc(d[X].p.title):'—'}</div>`).join('')+`<small class="mut">💬 ${n}</small></div>`}).join('')}
+
+$('#app').onclick=e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,D=t.dataset.d;
+  if(a==='open'){view={...view,tab:'day',day:D,built:null};render();scrollTo(0,0)}
+  if(a==='rank'){const p=`rank/${cfg.me}.json`,r={...(cache[p]?.v||{})};if(r[D]===t.dataset.v)delete r[D];else r[D]=t.dataset.v;save(p,r)}
+  if(a==='prop')propDlg(D);
+  if(a==='f'){view.filter=t.dataset.v;render()}
+  if(a==='send'){const i=$('#mi'),x=i.value.trim();if(!x)return;i.value='';const p=`days/${D}/m-${cfg.me}.json`;save(p,[...(cache[p]?.v||[]),{t:Date.now(),x}])}};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view={...view,tab:b.dataset.t,built:null};render();scrollTo(0,0)});
+$('#gear').onclick=()=>setDlg(false);
+
+function propDlg(D){const e=data.days[D]?.[cfg.me]?.p||{};
+  dlg.innerHTML=`<form method="dialog"><h3>Ma proposition du jour</h3><select id="pt">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}"${e.type===k?' selected':''}>${v} ${k}</option>`).join('')}</select>
+  <input id="pn" placeholder="Titre" value="${esc(e.title||'')}"><input id="pl" placeholder="Lien (facultatif)" value="${esc(e.link||'')}">
+  <label class="mut">Image (facultatif)<input id="pf" type="file" accept="image/*"></label><div class="btns"><button value="cancel">Annuler</button><button class="go" id="ps">Publier</button></div></form>`;
+  dlg.showModal();
+  $('#ps').onclick=async ev=>{ev.preventDefault();const t=$('#pn').value.trim();if(!t)return;let l=$('#pl').value.trim();if(l&&!/^https?:\/\//i.test(l))l='https://'+l;
+    const f=$('#pf').files[0];let img=!!e.img;
+    if(f){const b=await compress(f),path=`img/${D}-${cfg.me}.jpg`;img=true;busy++;
+      q=q.then(()=>put(path,b,'photo',true)).then(()=>{imgs[tree[path]]='data:image/jpeg;base64,'+b;render()}).catch(()=>toast('Échec de l’image')).finally(()=>busy--)}
+    save(`days/${D}/p-${cfg.me}.json`,{title:t,type:$('#pt').value,link:l,img,ts:e.ts||Date.now()});dlg.close()}}
+function setDlg(first){const c=cfg||{},me=c.me||'A',cc=c.color||COLS[me==='A'?0:1];
+  dlg.innerHTML=`<form method="dialog"><h3>Réglages</h3><input id="sr" placeholder="compte/tierduo-data" value="${esc(c.repo||'')}">
+  <input id="sk" type="password" placeholder="Jeton GitHub (reste sur cet appareil)" value="${esc(c.token||'')}"><input id="sn" placeholder="Ton prénom" value="${esc(c.name||'')}">
+  <div class="btns" style="justify-content:flex-start"><label><input type="radio" name="sm" value="A"${me==='A'?' checked':''}> Personne A</label><label><input type="radio" name="sm" value="B"${me==='B'?' checked':''}> Personne B</label></div>
+  <div class="sw">${COLS.map(k=>`<label><input type="radio" name="sc" value="${k}"${cc===k?' checked':''}><span style="background:${k}"></span></label>`).join('')}</div>
+  <div class="btns">${first?'':'<button value="cancel">Fermer</button>'}<button class="go" id="ss">Enregistrer</button></div></form>`;
+  dlg.showModal();
+  $('#ss').onclick=async ev=>{ev.preventDefault();const n=$('#sn').value.trim(),r=$('#sr').value.trim(),k=$('#sk').value.trim();if(!n||!r||!k)return toast('Tout remplir');
+    cfg={repo:r,token:k,name:n,me:document.querySelector('[name=sm]:checked').value,color:document.querySelector('[name=sc]:checked').value};
+    localStorage.td_cfg=JSON.stringify(cfg);cache={};tree={};lastTree='';dlg.close();await sync(true);
+    save(`users/${cfg.me}.json`,{name:cfg.name,color:cfg.color});render()}}
+
+if(!cfg)setDlg(true);else{render();sync()}
+setInterval(()=>{if(!document.hidden)sync()},12000);document.onvisibilitychange=()=>{if(!document.hidden)sync()};
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>

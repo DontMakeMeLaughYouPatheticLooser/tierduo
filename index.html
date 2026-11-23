@@ -54,7 +54,7 @@ dialog input:not([type=radio]),dialog select{display:block;width:100%;margin:8px
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Paris'});
-const TIERS=['S','A','B','C','D'],TYPES={musique:'🎵',film:'🎬',plat:'🍽️',autre:'✨'},COLS=['#c8553d','#5f8f6b','#d9a031','#6b5b95','#3f7cac','#c2527f'];
+const TIERS=['S','A','B','C','D'],COLS=['#c8553d','#5f8f6b','#d9a031','#6b5b95','#3f7cac','#c2527f'];
 let cfg=JSON.parse(localStorage.td_cfg||'null'),tree={},cache={},imgs={},data={days:{},rank:{A:{},B:{}},users:{}},view={tab:'today',day:null,built:null,filter:'all'},lastTree='',busy=0,q=Promise.resolve(),syncing=false;
 const dlg=$('#dlg'),other=()=>cfg.me==='A'?'B':'A';
 const nm=X=>data.users[X]?.name||(X===cfg.me?cfg.name:'L’autre'),col=X=>data.users[X]?.color||(X===cfg.me&&cfg.color)||COLS[X==='A'?0:1];
@@ -103,7 +103,7 @@ function card(D,X){const me=cfg.me,isMe=X===me,p=data.days[D]?.[X]?.p,c=col(X);
   let h=`<div class="card" style="border-top:5px solid ${c}"><div class="who" style="color:${c}">${esc(nm(X))}${isMe?' (moi)':''}</div>`;
   if(!p)h+=isMe&&D===today()?`<button class="go" data-a="prop" data-d="${D}">+ Ma proposition du jour</button>`:`<p class="mut">${isMe?'Pas de proposition ce jour-là.':'Rien proposé pour l’instant…'}</p>`;
   else{const s=p.img?imgSrc(D,X):'',r=data.rank[isMe?other():me]?.[D];
-    h+=`<div class="ttl">${TYPES[p.type]||'✨'} ${esc(p.title)}</div>`+(s?`<img src="${s}">`:p.img?'<div class="mut">Chargement de l’image…</div>':'')+(p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">🔗 ${esc(p.link.replace(/^https?:\/\/(www\.)?/,'').slice(0,40))}</a>`:'');
+    h+=`<div class="ttl">${esc(p.title)}</div>`+(s?`<img src="${s}">`:p.img?'<div class="mut">Chargement de l’image…</div>':'')+(p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener">🔗 ${esc(p.link.replace(/^https?:\/\/(www\.)?/,'').slice(0,40))}</a>`:'');
     if(isMe)h+=`<div class="mut">${r?`Classé <b class="t t${r}" style="min-width:26px;height:26px">${r}</b> par ${esc(nm(other()))}`:'Pas encore classé'}</div>`+(D===today()?`<button class="lnk" data-a="prop" data-d="${D}">✏️ Modifier</button>`:'');
     else h+=`<div class="tiers">${TIERS.map(v=>`<button class="t t${v}${r===v?' on':''}" data-a="rank" data-d="${D}" data-v="${v}">${v}</button>`).join('')}</div>`}
   return h+'</div>'}
@@ -114,15 +114,14 @@ function dayView(D){const A=$('#app');
   const ms=['A','B'].flatMap(X=>(data.days[D]?.[X]?.m||[]).map(m=>({...m,X}))).sort((a,b)=>a.t-b.t),box=$('#msgs'),n=box.dataset.n;
   box.innerHTML=ms.length?ms.map(m=>`<div class="b${m.X===cfg.me?' me':''}" style="--c:${col(m.X)}"><small>${esc(nm(m.X))} · ${new Date(m.t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</small>${linkify(esc(m.x))}</div>`).join(''):'<p class="mut">Aucun message pour l’instant.</p>';
   if(n!==undefined&&+n!==ms.length)scrollTo(0,document.body.scrollHeight);box.dataset.n=ms.length}
-function tierView(){view.built=null;const f=view.filter,items=[];
+function tierView(){view.built=null;const items=[];
   for(const D in data.days)for(const X of['A','B']){const p=data.days[D][X]?.p;if(p)items.push({D,X,p,r:data.rank[X==='A'?'B':'A']?.[D]})}
-  items.sort((a,b)=>b.D.localeCompare(a.D));const ok=i=>f==='all'||i.p.type===f;
-  const chip=(v,l)=>`<button class="chip${f===v?' on':''}" data-a="f" data-v="${v}">${l}</button>`;
-  const it=i=>{const s=i.p.img?imgSrc(i.D,i.X):'';return`<div class="it" data-a="open" data-d="${i.D}" style="border-color:${col(i.X)}" title="${esc(nm(i.X))}">${s?`<img src="${s}">`:`<span class="em">${TYPES[i.p.type]||'✨'}</span>`}<span>${esc(i.p.title)}</span></div>`};
-  const todo=items.filter(i=>i.X!==cfg.me&&!i.r&&ok(i));
-  $('#app').innerHTML=`<div class="chips">${chip('all','Tout')}${Object.entries(TYPES).map(([k,v])=>chip(k,v+' '+k)).join('')}</div>`+
+  items.sort((a,b)=>b.D.localeCompare(a.D));
+  const it=i=>{const s=i.p.img?imgSrc(i.D,i.X):'';return`<div class="it" data-a="open" data-d="${i.D}" style="border-color:${col(i.X)}" title="${esc(nm(i.X))}">${s?`<img src="${s}">`:''}<span>${esc(i.p.title)}</span></div>`};
+  const todo=items.filter(i=>i.X!==cfg.me&&!i.r);
+  $('#app').innerHTML=
    (todo.length?`<div class="row"><b class="t tx">À classer</b><div class="its">${todo.map(it).join('')}</div></div>`:'')+
-   TIERS.map(T=>`<div class="row"><b class="t t${T}">${T}</b><div class="its">${items.filter(i=>i.r===T&&ok(i)).map(it).join('')||'<i class="mut">—</i>'}</div></div>`).join('')}
+   TIERS.map(T=>`<div class="row"><b class="t t${T}">${T}</b><div class="its">${items.filter(i=>i.r===T).map(it).join('')||'<i class="mut">—</i>'}</div></div>`).join('')}
 function daysView(){view.built=null;const ds=new Set(Object.keys(data.days));ds.add(today());
   $('#app').innerHTML=[...ds].sort().reverse().map(D=>{const d=data.days[D]||{},n=(d.A?.m?.length||0)+(d.B?.m?.length||0);
     return`<div class="card day" data-a="open" data-d="${D}"><b>${new Date(D+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</b>`+
@@ -138,15 +137,14 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view={...view,
 $('#gear').onclick=()=>setDlg(false);
 
 function propDlg(D){const e=data.days[D]?.[cfg.me]?.p||{};
-  dlg.innerHTML=`<form method="dialog"><h3>Ma proposition du jour</h3><select id="pt">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}"${e.type===k?' selected':''}>${v} ${k}</option>`).join('')}</select>
-  <input id="pn" placeholder="Titre" value="${esc(e.title||'')}"><input id="pl" placeholder="Lien (facultatif)" value="${esc(e.link||'')}">
+  dlg.innerHTML=`<form method="dialog"><h3>Ma proposition du jour</h3><input id="pn" placeholder="Titre" value="${esc(e.title||'')}"><input id="pl" placeholder="Lien (facultatif)" value="${esc(e.link||'')}">
   <label class="mut">Image (facultatif)<input id="pf" type="file" accept="image/*"></label><div class="btns"><button value="cancel">Annuler</button><button class="go" id="ps">Publier</button></div></form>`;
   dlg.showModal();
   $('#ps').onclick=async ev=>{ev.preventDefault();const t=$('#pn').value.trim();if(!t)return;let l=$('#pl').value.trim();if(l&&!/^https?:\/\//i.test(l))l='https://'+l;
     const f=$('#pf').files[0];let img=!!e.img;
     if(f){const b=await compress(f),path=`img/${D}-${cfg.me}.jpg`;img=true;busy++;
       q=q.then(()=>put(path,b,'photo',true)).then(()=>{imgs[tree[path]]='data:image/jpeg;base64,'+b;render()}).catch(()=>toast('Échec de l’image')).finally(()=>busy--)}
-    save(`days/${D}/p-${cfg.me}.json`,{title:t,type:$('#pt').value,link:l,img,ts:e.ts||Date.now()});dlg.close()}}
+    save(`days/${D}/p-${cfg.me}.json`,{title:t,link:l,img,ts:e.ts||Date.now()});dlg.close()}}
 function setDlg(first){const c=cfg||{},me=c.me||'A',cc=c.color||COLS[me==='A'?0:1];
   dlg.innerHTML=`<form method="dialog"><h3>Réglages</h3><input id="sr" placeholder="compte/tierduo-data" value="${esc(c.repo||'')}">
   <input id="sk" type="password" placeholder="Jeton GitHub (reste sur cet appareil)" value="${esc(c.token||'')}"><input id="sn" placeholder="Ton prénom" value="${esc(c.name||'')}">
